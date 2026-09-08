@@ -2,7 +2,7 @@
 
 > **FIAP — Challenge 2026 | Sprint 1**  
 > Advanced Business Development with .NET  
-> RM556649
+
 
 ---
 
@@ -196,8 +196,10 @@ A string de conexão está no arquivo `appsettings.json`:
 ## 👥 Integrantes
 
 | Nome | RM |
-|------|----|
-| [Seu Nome] | RM556649 |
+| Matheus Arazin de Oliveira | 556649 |
+| Artur Pioli Silva| 565597 |
+| Kevin Martins Campos| 563454 |
+| Pedro Gabriel Claes| 566058 |
 
 ---
 
