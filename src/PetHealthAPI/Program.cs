@@ -9,6 +9,9 @@ using Serilog;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using PetHealthAPI.Infraestrutura.Observabilidade;
+using PetHealthAPI.Dominio.Interfaces;
+using PetHealthAPI.Infraestrutura.Repositorios;
+using PetHealthAPI.Aplicacao.Servicos;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -57,6 +60,9 @@ builder.Services.AddHealthChecks()
         tags: new[] { "external" });
 
 builder.Services.AddSingleton<AplicacaoMetricas>();
+
+builder.Services.AddScoped<ITutorRepositorio, TutorRepositorio>();
+builder.Services.AddScoped<PetAplicacaoService>();
 
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing
