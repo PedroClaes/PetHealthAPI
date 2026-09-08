@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using PetHealthAPI.Data;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using PetHealthAPI.Infraestrutura.Health;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +29,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddHealthChecks()
+    .AddOracle(
+        builder.Configuration.GetConnectionString("OracleConnection")!,
+        name: "oracle-database",
+        tags: new[] { "db", "oracle" })
+    .AddCheck<ServicoExternoHealthCheck>(
+        "servico-externo",
+        tags: new[] { "external" });
+
 var app = builder.Build();
 
 app.UseSwagger();
@@ -36,5 +49,28 @@ app.UseSwaggerUI(c =>
 
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var resposta = new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                nome = e.Key,
+                status = e.Value.Status.ToString(),
+                descricao = e.Value.Description,
+                duracaoMs = e.Value.Duration.TotalMilliseconds,
+                dados = e.Value.Data
+            }),
+            duracaoTotalMs = report.TotalDuration.TotalMilliseconds
+        };
+        await context.Response.WriteAsync(
+            JsonSerializer.Serialize(resposta, new JsonSerializerOptions { WriteIndented = true }));
+    }
+});
 
 app.Run();
