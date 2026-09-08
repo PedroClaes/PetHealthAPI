@@ -5,7 +5,8 @@ using Xunit;
 
 namespace PetHealthAPI.Tests.Integration
 {
-    public class PetsEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
+    [Collection("Integration Tests")]
+    public class PetsEndpointsTests
     {
         private readonly HttpClient _client;
 
