@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetHealthAPI.Data;
 using PetHealthAPI.Models;
+using PetHealthAPI.Infraestrutura.Observabilidade;
 
 namespace PetHealthAPI.Controllers
 {
@@ -14,10 +15,12 @@ namespace PetHealthAPI.Controllers
     public class PetsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly AplicacaoMetricas _metricas;
 
-        public PetsController(AppDbContext context)
+        public PetsController(AppDbContext context, AplicacaoMetricas metricas)
         {
             _context = context;
+            _metricas = metricas;
         }
 
         // ─────────────────────────────────────────────
@@ -115,16 +118,28 @@ namespace PetHealthAPI.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Pet>> Post([FromBody] Pet pet)
         {
+            using var activity = AplicacaoMetricas.ActivitySource.StartActivity("CriarPetEndpoint");
+            activity?.SetTag("pet.nome", pet.Nome);
+            activity?.SetTag("pet.tutorId", pet.TutorId);
+
             if (!ModelState.IsValid)
+            {
+                _metricas.RegistrarPetCriado("erro_validacao");
                 return BadRequest(ModelState);
+            }
 
             var tutorExiste = await _context.Tutores.AnyAsync(t => t.Id == pet.TutorId);
             if (!tutorExiste)
+            {
+                _metricas.RegistrarPetCriado("erro_validacao");
                 return BadRequest(new { mensagem = $"Tutor com ID {pet.TutorId} não encontrado. Cadastre o tutor antes do pet." });
+            }
 
             pet.DataCadastro = DateTime.Now;
             _context.Pets.Add(pet);
             await _context.SaveChangesAsync();
+
+            _metricas.RegistrarPetCriado("sucesso");
 
             return CreatedAtAction(nameof(GetPorId), new { id = pet.Id }, pet);
         }

@@ -6,6 +6,9 @@ using PetHealthAPI.Infraestrutura.Health;
 using System.Text.Json;
 using PetHealthAPI.Aplicacao.Middlewares;
 using Serilog;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
+using PetHealthAPI.Infraestrutura.Observabilidade;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -52,6 +55,18 @@ builder.Services.AddHealthChecks()
     .AddCheck<ServicoExternoHealthCheck>(
         "servico-externo",
         tags: new[] { "external" });
+
+builder.Services.AddSingleton<AplicacaoMetricas>();
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddSource(AplicacaoMetricas.NomeActivitySource)
+        .AddAspNetCoreInstrumentation()
+        .AddConsoleExporter())
+    .WithMetrics(metrics => metrics
+        .AddMeter("PetHealthAPI.API")
+        .AddAspNetCoreInstrumentation()
+        .AddConsoleExporter());
 
 var app = builder.Build();
 
