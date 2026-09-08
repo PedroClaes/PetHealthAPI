@@ -4,8 +4,23 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using PetHealthAPI.Infraestrutura.Health;
 using System.Text.Json;
+using PetHealthAPI.Aplicacao.Middlewares;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(outputTemplate:
+        "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.File("logs/app-.log",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate:
+        "[{Timestamp:HH:mm:ss} {Level:u3}] [{CorrelationId}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
 
@@ -39,6 +54,8 @@ builder.Services.AddHealthChecks()
         tags: new[] { "external" });
 
 var app = builder.Build();
+
+app.UseMiddleware<CorrelationIdMiddleware>();
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>
