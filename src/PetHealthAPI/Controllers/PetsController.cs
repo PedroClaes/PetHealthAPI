@@ -122,6 +122,16 @@ namespace PetHealthAPI.Controllers
             activity?.SetTag("pet.nome", pet.Nome);
             activity?.SetTag("pet.tutorId", pet.TutorId);
 
+            try
+            {
+                PetHealthAPI.Dominio.Validacoes.PetValidador.Validar(pet);
+            }
+            catch (ArgumentException ex)
+            {
+                _metricas.RegistrarPetCriado("erro_validacao");
+                return BadRequest(new { mensagem = ex.Message });
+            }
+
             if (!ModelState.IsValid)
             {
                 _metricas.RegistrarPetCriado("erro_validacao");
